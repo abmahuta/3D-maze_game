@@ -1,131 +1,56 @@
-#include "headers/mazedi.h"
+#include "maze.h"
 
 /**
- * input - checks user input for movement
- * @maze: 2D array defining maze map
+ * loadTextures - loads textures from file and puts pixel information in buffer
+ * @mapName: name of map loaded
  * Return: void
  */
-void input(int *maze)
+void loadTextures(char *mapName)
 {
-	const uint8_t *keystate; /* current key state */
-	double oldTime; /* time of previous frame */
-	double frameTime; /* time the frame has taken in seconds */
-	double oldDirX, oldPlaneX; /* previous dir.x and plane.x */
-	double moveSpeed; /* move speed modifier */
-	double rotateSpeed; /* rotate speed modifier */
+	SDL_Surface *texSrc[TEX_COUNT]; /* array of loaded textures */
+	uint8_t *pixel; /* color value of pixel at given coordinate */
+	int i, j, k; /* loop counters */
 
-	keystate = SDL_GetKeyboardState(NULL);
-	oldTime = time;
-	time = SDL_GetTicks();
-	frameTime = (time - oldTime) / 1000.0;
-	moveSpeed = frameTime * 5.0;
-	rotateSpeed = frameTime * 3.0;
-
-	/* move forward if no wall in front */
-	if (keystate[SDL_SCANCODE_W])
+	if (strcmp(mapName, "maps/map_0") == 0)
 	{
-		if (!*((int *)maze + (int)(pos.x + dir.x * moveSpeed)
-		       * MAP_WIDTH + (int)pos.y))
-			pos.x += dir.x * moveSpeed;
-		if (!*((int *)maze + (int)pos.x * MAP_WIDTH +
-		       (int)(pos.y + dir.y * moveSpeed)))
-			pos.y += dir.y * moveSpeed;
+		texSrc[0] = IMG_Load("textures/wall1.png");
+		texSrc[1] = IMG_Load("textures/wall2.png");
+		texSrc[2] = IMG_Load("textures/windowtree.png");
+		texSrc[3] = IMG_Load("textures/windowspooky.png");
+		texSrc[4] = IMG_Load("textures/ceiling.png");
+		texSrc[5] = IMG_Load("textures/floorboards.png");
+	}
+	else
+	{
+		texSrc[0] = IMG_Load("textures/hedge1.png");
+		texSrc[1] = IMG_Load("textures/hedge2.png");
+		texSrc[2] = IMG_Load("textures/gate.png");
+		texSrc[3] = IMG_Load("textures/hedge1.png");
+		texSrc[4] = IMG_Load("textures/sky.png");
+		texSrc[5] = IMG_Load("textures/grass.png");
 	}
 
-	/* move backward if no wall behind */
-	if (keystate[SDL_SCANCODE_S])
+	/* get colors from texture pixels and put in array */
+	for (i = 0; i < TEX_COUNT; i++)
 	{
-		if (!*((int *)maze + (int)(pos.x - dir.x * moveSpeed) *
-		       MAP_WIDTH + (int)(pos.y)))
-			pos.x -= dir.x * moveSpeed;
-		if (!*((int *)maze + (int)(pos.x) * MAP_WIDTH +
-		       (int)(pos.y - dir.y * moveSpeed)))
-			pos.y -= dir.y * moveSpeed;
-	}
-
-	/* strafe left */
-	if (keystate[SDL_SCANCODE_Q])
-	{
-		if (!*((int *)maze + (int)(pos.x - plane.x * moveSpeed) *
-		       MAP_WIDTH + (int)(pos.y)))
-			pos.x -= plane.x * moveSpeed;
-		if (!*((int *)maze + (int)(pos.x) * MAP_WIDTH +
-		       (int)(pos.y - plane.y * moveSpeed)))
-			pos.y -= plane.y * moveSpeed;
-	}
-
-	/* strafe right */
-	if (keystate[SDL_SCANCODE_E])
-	{
-		if (!*((int *)maze + (int)(pos.x + plane.x * moveSpeed) *
-		       MAP_WIDTH + (int)(pos.y)))
-			pos.x += plane.x * moveSpeed;
-		if (!*((int *)maze + (int)(pos.x) * MAP_WIDTH +
-		       (int)(pos.y + plane.y * moveSpeed)))
-			pos.y += plane.y * moveSpeed;
-	}
-
-	/* rotate left */
-	if (keystate[SDL_SCANCODE_D])
-	{
-		/* rotate camera direction */
-		oldDirX = dir.x;
-		dir.x = dir.x * cos(rotateSpeed) - dir.y * sin(rotateSpeed);
-		dir.y = oldDirX * sin(rotateSpeed) + dir.y * cos(rotateSpeed);
-
-		/* rotate camera plane */
-		oldPlaneX = plane.x;
-		plane.x = plane.x * cos(rotateSpeed) - plane.y * sin(rotateSpeed);
-		plane.y = oldPlaneX * sin(rotateSpeed) + plane.y * cos(rotateSpeed);
-	}
-
-	/* rotate right */
-	if (keystate[SDL_SCANCODE_A])
-	{
-		/* rotate camera direction */
-		oldDirX = dir.x;
-		dir.x = dir.x * cos(-rotateSpeed) - dir.y * sin(-rotateSpeed);
-		dir.y = oldDirX * sin(-rotateSpeed) + dir.y * cos(-rotateSpeed);
-
-		/* rotate camera plane */
-		oldPlaneX = plane.x;
-		plane.x = plane.x * cos(-rotateSpeed) - plane.y * sin(-rotateSpeed);
-		plane.y = oldPlaneX * sin(-rotateSpeed) + plane.y * cos(-rotateSpeed);
-	}
-}
-
-/**
- * quit - checks if user quits
- * Return: True if user quits, else False
- */
-bool quit(void)
-{
-	SDL_Event event; /* event listener */
-	bool quit;
-	uint32_t windowFlags;
-
-	quit = false;
-	while (SDL_PollEvent(&event) != 0)
-	{
-		/* if window's close button is pressed */
-		if (event.type == SDL_QUIT)
-			quit = true;
-
-		/* if ESC is pressed */
-		if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
-			quit = true;
-
-		/* toggles between windowed and fullscreens */
-		if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_f)
+		for (j = 0; j < TEX_HEIGHT; j++)
 		{
-			windowFlags = SDL_GetWindowFlags(window);
+			for (k = 0; k < TEX_WIDTH; k++)
+			{
+				pixel = (uint8_t *)texSrc[i]->pixels
+					+ k * texSrc[i]->pitch + j *
+					texSrc[i]->format->BytesPerPixel;
 
-			if (windowFlags & SDL_WINDOW_FULLSCREEN)
-				SDL_SetWindowFullscreen(window, SDL_FALSE);
-			else
-				SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+				tiles[i][j][k] = pixel[0] | pixel[1] << 8
+					| pixel[2] << 16;
+			}
 		}
 	}
 
-	return (quit);
+	/* free SDL_Surfaces */
+	for (i = 0; i < TEX_COUNT; i++)
+	{
+		SDL_FreeSurface(texSrc[i]);
+		texSrc[i] = NULL;
+	}
 }
